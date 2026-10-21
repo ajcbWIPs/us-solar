@@ -3,6 +3,7 @@
 Static dashboard, no build step. Served by GitHub Pages from the repo root.
 
 - `index.html`: residential rooftop solar and battery adoption by state. Disposable income, electricity bills, annual PV yield, payback, NPV and an adoption propensity index.
+- `freight.html`: warehouse rooftop solar feeding battery-swap stations for heavy freight trucks to displace diesel, with candidate US sites ranked on diesel and power prices, sunshine and existing port, rail and charging infrastructure.
 - `datacentres.html`: rooftop PV technical potential by state, distance to data centre hubs, and the cost of renting rooftops vs owning utility-scale PV, gas or grid supply for a data centre load.
 
 ## Updating the data
@@ -11,4 +12,4 @@ Drop a `data/states.csv` file in the repo with columns `code,price,kwh_mo,dpi,yi
 
 ## Sources
 
-EIA residential prices and consumption (2024), BEA disposable personal income (2024), NREL PVWatts yields, NREL TP-6A20-65298 rooftop technical potential, Lazard LCOE+ (June 2026), DCMap pipeline figures via Next Move Strategy Consulting (Aug 2026). Penetration and battery attachment rates are indicative estimates.
+EIA residential prices and consumption (2024), BEA disposable personal income (2024), NREL PVWatts yields, NREL TP-6A20-65298 rooftop technical potential, Lazard LCOE+ (June 2026), DCMap pipeline figures via Next Move Strategy Consulting (Aug 2026), EIA on-highway diesel (Oct 2026), EIA industrial electricity prices (2024), BNEF battery price survey (2025). Penetration and battery attachment rates are indicative estimates.

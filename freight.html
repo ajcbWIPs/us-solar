@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solar Truck Battery Swapping</title>
+<meta name="description" content="Economics of warehouse rooftop solar feeding battery-swap stations for heavy freight trucks to displace diesel, with candidate US locations ranked against existing infrastructure.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --ink:#14181f; --muted:#5d6675; --line:#e2e6ec;
+  --accent:#e08a00; --accent2:#1f6feb; --c3:#1a7f37; --c4:#8250df; --bad:#c43c3c;
+  --shadow:0 1px 2px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1116; --panel:#161b22; --ink:#e6edf3; --muted:#8b949e; --line:#2a313b;
+    --accent:#f0a020; --accent2:#58a6ff; --c3:#3fb950; --c4:#bc8cff; --bad:#f85149; --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1116; --panel:#161b22; --ink:#e6edf3; --muted:#8b949e; --line:#2a313b;
+  --accent:#f0a020; --accent2:#58a6ff; --c3:#3fb950; --c4:#bc8cff; --bad:#f85149; --shadow:none;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 Inter,system-ui,sans-serif}
+header,main,footer{max-width:1280px;margin:0 auto;padding-left:16px;padding-right:16px}
+header{padding-top:20px;padding-bottom:8px}
+h1{font-size:22px;margin:0 0 4px;letter-spacing:-.01em}
+h2{font-size:15px;margin:0 0 10px}
+a{color:var(--accent2)}
+.sub{color:var(--muted);margin:0;max-width:880px}
+main{display:grid;gap:14px;padding-bottom:40px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;box-shadow:var(--shadow);min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+.kpi .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.kpi .v{font:600 20px "JetBrains Mono",monospace;margin-top:2px}
+.kpi .n{font-size:11px;color:var(--muted)}
+.row3{display:grid;grid-template-columns:300px 1fr;gap:14px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:1000px){.row3,.row2{grid-template-columns:1fr}}
+.chartbox{position:relative;height:300px}
+.ctrl{margin-bottom:11px}
+.ctrl label{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:3px}
+.ctrl label b{color:var(--ink);font-family:"JetBrains Mono",monospace;font-weight:600}
+.grp{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:14px 0 6px;border-top:1px solid var(--line);padding-top:10px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:12px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th.l,td.l{text-align:left}
+td.wrap{white-space:normal;min-width:260px;font-family:Inter,system-ui,sans-serif;color:var(--muted)}
+th{cursor:pointer;color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--panel)}
+th.sorted{color:var(--accent)}
+td{font-family:"JetBrains Mono",monospace}
+tr:hover td{background:var(--bg)}
+.tag{display:inline-block;font:500 10px Inter,sans-serif;padding:1px 6px;border-radius:99px;border:1px solid var(--line);margin:1px 2px 1px 0;color:var(--muted)}
+.tag.g{border-color:var(--c3);color:var(--c3)} .tag.b{border-color:var(--bad);color:var(--bad)} .tag.a{border-color:var(--accent2);color:var(--accent2)}
+.note{font-size:12px;color:var(--muted)}
+.note p{margin:6px 0}
+.pill{display:inline-block;font-size:11px;padding:1px 7px;border-radius:99px;background:var(--bg);border:1px solid var(--line);color:var(--accent2);text-decoration:none}
+.stack{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+.opt{border:1px solid var(--line);border-radius:10px;padding:12px;border-top:4px solid var(--c)}
+.opt .t{font-weight:600;font-size:13px}
+.opt .v{font:600 20px "JetBrains Mono",monospace}
+.opt .n{font-size:11px;color:var(--muted)}
+.verdict{font-size:13px;padding:10px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--line)}
+.picks{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+.pick{border:1px solid var(--line);border-radius:10px;padding:12px}
+.pick .rk{font:600 12px "JetBrains Mono",monospace;color:var(--accent)}
+.pick .nm{font-weight:600;margin:2px 0}
+.pick p{margin:4px 0;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <p style="margin:0 0 8px"><a class="pill" href="index.html">← Residential adoption</a> <a class="pill" href="datacentres.html">← Rooftop solar vs data centres</a></p>
+  <h1>Solar Battery Swapping for Heavy Freight</h1>
+  <p class="sub">Warehouse rooftop solar charges spare truck packs at a swap station, and the trucks displace diesel. A kWh in a truck replaces 30 to 50c of diesel, compared with about 15c of retail power in a southern home or 5 to 9c wholesale. The model below costs the full chain and ranks candidate US sites on fuel prices, power prices, sunshine and the freight and charging infrastructure already there.</p>
+</header>
+
+<main>
+  <div class="kpis" id="kpis"></div>
+
+  <div class="row3">
+    <aside class="panel">
+      <h2>Depot model</h2>
+      <div class="grp" style="border:0;margin-top:0;padding-top:0">Fuel and duty cycle</div>
+      <div class="ctrl"><label>Diesel price <b id="o_diesel"></b></label><input type="range" id="diesel" min="2.5" max="8" step="0.05"></div>
+      <div class="ctrl"><label>Diesel truck economy <b id="o_mpg"></b></label><input type="range" id="mpg" min="5" max="10" step="0.1"></div>
+      <div class="ctrl"><label>Electric truck consumption <b id="o_kwhMi"></b></label><input type="range" id="kwhMi" min="1.3" max="2.6" step="0.05"></div>
+      <div class="ctrl"><label>Annual miles per truck <b id="o_miles"></b></label><input type="range" id="miles" min="30000" max="140000" step="5000"></div>
+      <div class="grp">Batteries and station</div>
+      <div class="ctrl"><label>Swap pack size <b id="o_pack"></b></label><input type="range" id="pack" min="200" max="800" step="10"></div>
+      <div class="ctrl"><label>Spare packs per truck <b id="o_spare"></b></label><input type="range" id="spare" min="0.2" max="1.5" step="0.05"></div>
+      <div class="ctrl"><label>Pack cost incl. enclosure <b id="o_packCost"></b></label><input type="range" id="packCost" min="70" max="250" step="5"></div>
+      <div class="ctrl"><label>Swap station capex <b id="o_stationCapex"></b></label><input type="range" id="stationCapex" min="1000000" max="8000000" step="100000"></div>
+      <div class="ctrl"><label>Trucks served per station <b id="o_trucks"></b></label><input type="range" id="trucks" min="20" max="150" step="5"></div>
+      <div class="ctrl"><label>VPP / grid services credit <b id="o_vpp"></b></label><input type="range" id="vpp" min="0" max="150" step="5"></div>
+      <div class="grp">Energy supply</div>
+      <div class="ctrl"><label>Rooftop solar share of energy <b id="o_solarShare"></b></label><input type="range" id="solarShare" min="0" max="90" step="1"></div>
+      <div class="ctrl"><label>Warehouse rooftop LCOE <b id="o_solarLcoe"></b></label><input type="range" id="solarLcoe" min="5" max="20" step="0.25"></div>
+      <div class="ctrl"><label>Grid power price <b id="o_grid"></b></label><input type="range" id="grid" min="4" max="25" step="0.1"></div>
+      <div class="grp">Truck and policy</div>
+      <div class="ctrl"><label>Swap-ready chassis premium <b id="o_chassisPrem"></b></label><input type="range" id="chassisPrem" min="-20000" max="150000" step="5000"></div>
+      <div class="ctrl"><label>EV road-use charge <b id="o_roadFee"></b></label><input type="range" id="roadFee" min="0" max="0.15" step="0.005"></div>
+      <div class="ctrl"><label>Discount rate <b id="o_r"></b></label><input type="range" id="r" min="3" max="14" step="0.5"></div>
+    </aside>
+
+    <div class="panel">
+      <h2>Cost per mile, diesel vs solar swap</h2>
+      <div class="stack" id="stack"></div>
+      <div class="chartbox"><canvas id="mileChart"></canvas></div>
+      <div class="verdict" id="verdict" style="margin-top:12px"></div>
+    </div>
+  </div>
+
+  <div class="row2">
+    <div class="panel">
+      <h2>Savings per truck vs diesel price</h2>
+      <div class="chartbox"><canvas id="sensChart"></canvas></div>
+      <p class="note" id="sensNote"></p>
+    </div>
+    <div class="panel">
+      <h2>What a kWh is worth by end use</h2>
+      <div class="chartbox"><canvas id="valueChart"></canvas></div>
+      <p class="note">Freight value is the diesel cost per mile divided by electric truck kWh per mile, at the current diesel slider. Residential is the mean retail price in the sunny southern states. Wholesale is a typical ERCOT and Southeast range midpoint.</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Recommended first sites</h2>
+    <div class="picks" id="picks"></div>
+  </div>
+
+  <div class="panel">
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px">
+      <h2 style="margin:0">Candidate locations</h2>
+      <div style="min-width:280px" class="ctrl"><label>Diesel scenario, % of Oct 2026 regional price <b id="o_dScen"></b></label><input type="range" id="dScen" min="40" max="130" step="5"></div>
+    </div>
+    <div class="tablewrap"><table id="siteTbl"></table></div>
+    <p class="note">Each site uses its regional diesel price (scaled by the scenario slider), its state's industrial power price, local solar yield and a climate factor on truck consumption. Other inputs come from the depot model. Score is 60% modelled saving per truck relative to the best site and 40% infrastructure readiness. Click a column to sort.</p>
+  </div>
+
+  <div class="panel note">
+    <h2 style="color:var(--ink)">Method and sources</h2>
+    <p><b>Diesel.</b> EIA on-highway retail diesel, week of 5 Oct 2026: US $6.20, West Coast $7.23, Midwest $6.29, East Coast $5.95. Gulf Coast and Rocky Mountain values are estimates from their usual spread to the US average and are marked (est). A year earlier the US average was $3.72, so the scenario slider matters.</p>
+    <p><b>Electric trucks.</b> About 1.9 kWh/mile for a loaded Class 8 tractor, in line with fleet reports of roughly 1.1 kWh/km. Cold climates add 5 to 12% for cabin and pack heating.</p>
+    <p><b>Batteries.</b> BNEF 2025 survey: LFP packs averaged $81/kWh, with North America about 44% above China. The $150/kWh default adds a swappable enclosure, connectors and US pricing. Cycle life is not binding at these utilisations (about 270 full cycles a year over 8 years).</p>
+    <p><b>Swap stations.</b> CATL's Qiji network reached about 305 heavy-truck stations in China in 2025 with a plan for about 900 more, and a UK joint venture with Octopus Energy targets first stations in 2027. US station capex is not public, so the $4M default is an assumption covering the robot, building, pack racks and grid connection.</p>
+    <p><b>Electricity.</b> EIA 2024 industrial average prices by state. Rooftop LCOE default of 10c sits at the low end of Lazard's $88 to 197/MWh community and C&I range, because a single large warehouse roof with on-site use avoids wheeling and contract fragmentation. Solar is costed at a 1,400 kWh/kWp reference site and scaled by local yield.</p>
+    <p><b>Model.</b> Delivered energy cost = solar share × rooftop LCOE + remainder × grid price, plus annualised packs (truck pack plus spares) and station capex, less VPP credit, all per kWh delivered. Per mile cost adds maintenance ($0.18 diesel, $0.12 electric), the annualised chassis premium and any road-use charge. Diesel prices already include about 60c/gal of fuel tax that electric trucks avoid until a road-use charge applies.</p>
+    <p><b>Infrastructure readiness.</b> Scored 0 to 5 from: port or major intermodal terminal, existing or funded heavy-duty charging (WattEV Long Beach operating, Bakersfield, San Bernardino, Gardena, Sacramento and Blythe funded, TeraWatt I-10 corridor, NMDOT I-10 grant), large warehouse roof stock, short repeatable duty cycles, and grid headroom (sites competing with large data centre pipelines lose a point).</p>
+  </div>
+</main>
+<footer class="note" style="padding-bottom:30px">Indicative analysis for research purposes. Not investment advice.</footer>
+
+<script id="model">
+const crf=(r,n)=>r/(1-Math.pow(1+r,-n));
+const DEF={diesel:6.20,mpg:6.5,kwhMi:1.9,miles:90000,pack:400,spare:0.6,packCost:150,stationCapex:4000000,trucks:60,
+  vpp:40,solarShare:60,solarLcoe:10,grid:9,chassisPrem:40000,roadFee:0,r:8,dScen:100};
+function swap(p,site){
+  const yld=site?site.yld:1420, clim=site?site.clim:1, grid=site?site.ind:p.grid, diesel=site?site.diesel*p.dScen/100:p.diesel;
+  const r=p.r/100, kwhMi=p.kwhMi*clim, kwhYr=kwhMi*p.miles, s=p.solarShare/100;
+  const solarLcoe=p.solarLcoe/100*(1400/yld);
+  const elec=s*solarLcoe+(1-s)*grid/100;
+  const batt=p.pack*(1+p.spare)*p.packCost*crf(r,8)/kwhYr;
+  const stationKw=Math.max(1000,p.trucks*p.pack*0.125);
+  const station=(p.stationCapex*crf(r,15)+0.05*p.stationCapex-p.vpp*stationKw)/(kwhYr*p.trucks);
+  const perKwh=elec+batt+station;
+  const chassis=p.chassisPrem*crf(r,8)/p.miles;
+  const ev={energy:elec*kwhMi,batt:batt*kwhMi,station:station*kwhMi,maint:0.12,chassis,road:p.roadFee};
+  const evMi=Object.values(ev).reduce((a,b)=>a+b,0);
+  const dsl={fuel:diesel/p.mpg,maint:0.18};
+  const dMi=dsl.fuel+dsl.maint;
+  const pvKwPerTruck=kwhYr*s/yld;
+  return {diesel,kwhMi,elec,batt,station,perKwh,ev,evMi,dsl,dMi,save:(dMi-evMi)*p.miles,
+    gal:p.miles/p.mpg,co2:p.miles/p.mpg*10.18/1000,pvMW:pvKwPerTruck*p.trucks/1000,
+    roofM2:pvKwPerTruck*p.trucks*1000/140,valuePerKwh:dsl.fuel/kwhMi,
+    breakevenDiesel:(evMi-0.18)*p.mpg};
+}
+// name, state, region label, diesel Oct 2026 $/gal, industrial c/kWh (EIA 2024), yield, climate factor, infra 0-5, tags, note
+const SITES=[
+["Ports of LA / Long Beach and Inland Empire","CA","West Coast",7.23,21.53,1500,1.00,5,["Top 2 US ports","WattEV operating","Huge warehouse roofs","Drayage"],"Highest diesel and the most mature HD charging in the US. Grid power is expensive, which makes on-site warehouse solar worth more here than anywhere else."],
+["Central Valley I-5 / CA-99 (Bakersfield, Sacramento)","CA","West Coast",7.23,21.53,1550,1.00,4,["WattEV Bakersfield, Sacramento funded","Ag and DC freight","I-5 spine"],"Funded megawatt depots and strong sun. Long-haul lanes mean longer gaps between swaps, so station spacing matters."],
+["Houston Ship Channel and Gulf petrochem belt","TX","Gulf Coast (est)",5.85,6.12,1420,1.00,4,["Top 5 port","Cheap ERCOT power","Short drayage loops"],"Cheap industrial power and dense, repeatable container and chemical drayage. Lower diesel price narrows the margin."],
+["Dallas-Fort Worth (Alliance, I-35/I-20/I-45)","TX","Gulf Coast (est)",5.85,6.12,1420,1.00,3,["Inland port and BNSF intermodal","Triangle lanes","DC grid competition"],"Large warehouse stock and Texas Triangle lanes of 200 to 300 miles suit swaps. Competes with an 85 GW data centre pipeline for grid capacity."],
+["Laredo border crossing (I-35)","TX","Gulf Coast (est)",5.85,6.12,1500,1.00,4,["Largest US land port","Short cross-border shuttles","Very high truck volume"],"Thousands of short cross-border shuttle moves a day, an ideal high-utilisation swap duty cycle with strong sun."],
+["Phoenix and I-10 west (to Blythe)","AZ","West Coast ex-CA (est)",6.60,7.90,1650,1.03,4,["TeraWatt I-10 corridor","Blythe depot funded","Best US sun"],"The best solar yield on the list and the planned I-10 electric corridor. Summer heat adds some cooling load."],
+["El Paso and southern New Mexico (I-10)","NM","Rocky Mtn (est)",6.20,5.43,1650,1.02,3,["NMDOT I-10 grant with TeraWatt","Border freight","Cheapest power"],"Cheapest industrial power and top-tier sun with federal corridor funding. Lower freight density than the coastal ports."],
+["Port of Savannah and I-16 / I-95","GA","East Coast",5.95,7.21,1330,1.00,4,["4th busiest port","Hyundai Metaplant","Fast-growing DC cluster"],"Fast-growing port with heavy drayage to inland warehouses. Georgia Power's data centre load growth is the grid risk."],
+["Atlanta logistics ring (I-75/I-85/I-285)","GA","East Coast",5.95,7.21,1330,1.00,3,["Southeast DC hub","Large warehouse stock","DC grid competition"],"Regional distribution hub for the Southeast with short and medium lanes."],
+["Chicago, Joliet and Elwood intermodal","IL","Midwest",6.29,8.83,1270,1.10,4,["Largest US rail hub","Rail-truck drayage","Cold winters"],"The largest rail intermodal hub, with short repeatable rail-to-warehouse moves. Winter consumption penalty and weaker sun."],
+["Memphis (I-40/I-55, rail and air cargo)","TN","Midwest",6.29,6.21,1290,1.04,3,["Five Class I railroads","Air cargo hub","Cheap TVA power"],"Cheap TVA power and a dense rail and air cargo cluster. TVA's restrictions on third-party generation complicate on-site solar."],
+["Columbus (Rickenbacker, I-70/I-71)","OH","Midwest",6.29,7.10,1210,1.08,2,["Rail intermodal","Warehouse growth","DC grid competition"],"Strong distribution market but weak sun, colder winters and heavy competition for grid capacity from data centres."],
+["Port of NY/NJ (Newark, Elizabeth, NJ Turnpike)","NJ","East Coast",5.95,11.93,1270,1.06,4,["3rd busiest port","NJ smart permitting law","Dense warehouses"],"Third busiest port with dense warehouse roofs and a state law for automated solar permitting. Higher power prices raise the value of on-site solar."],
+["Seattle-Tacoma ports","WA","West Coast",7.23,6.61,1100,1.04,3,["NW Seaport Alliance","Cheap hydro power","Weak sun"],"High diesel and very cheap hydro power. Solar adds little here, so it suits a grid-charged swap model."],
+["Kansas City (I-70/I-35, BNSF Logistics Park)","MO","Midwest",6.29,7.87,1350,1.08,3,["Major intermodal park","Central corridor junction"],"Central junction of two interstates with a large rail logistics park. Moderate sun and cold winters."],
+["Salt Lake City (I-15/I-80)","UT","Rocky Mtn (est)",6.20,7.86,1500,1.08,2,["Inland port authority","Strong sun","DC grid competition"],"Good sun and an inland port authority, but the 18.7 GW data centre pipeline competes for the same grid headroom."]
+];
+if(typeof module!=="undefined") module.exports={swap,SITES,DEF,crf};
+</script>
+
+<script>
+const P={...DEF};
+const FMT={diesel:v=>"$"+v.toFixed(2)+"/gal",mpg:v=>v.toFixed(1)+" mpg",kwhMi:v=>v.toFixed(2)+" kWh/mi",miles:v=>v.toLocaleString()+" mi",
+  pack:v=>v+" kWh",spare:v=>v.toFixed(2),packCost:v=>"$"+v+"/kWh",stationCapex:v=>"$"+(v/1e6).toFixed(1)+"M",trucks:v=>v+" trucks",
+  vpp:v=>"$"+v+"/kW-yr",solarShare:v=>v+"%",solarLcoe:v=>v.toFixed(2)+" c/kWh",grid:v=>v.toFixed(1)+" c/kWh",
+  chassisPrem:v=>(v<0?"-$":"$")+Math.abs(v/1000).toFixed(0)+"k",roadFee:v=>"$"+v.toFixed(3)+"/mi",r:v=>v.toFixed(1)+"%",dScen:v=>v+"%"};
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const $=v=>"$"+Math.round(v).toLocaleString(), c2=v=>"$"+v.toFixed(2);
+let mileChart,sensChart,valueChart,sort={k:"score",d:-1};
+
+function kpis(m){
+  const k=[
+    ["Saving per truck",$(m.save)+"/yr",(m.save>0?"vs diesel at ":"loss vs diesel at ")+c2(m.diesel)+"/gal"],
+    ["Break-even diesel",c2(m.breakevenDiesel)+"/gal","Below this, diesel is cheaper"],
+    ["Delivered cost",(m.perKwh*100).toFixed(1)+" c/kWh","Energy, packs and station"],
+    ["Diesel displaced",Math.round(m.gal).toLocaleString()+" gal","Per truck per year"],
+    ["CO₂ avoided",Math.round(m.co2)+" t","Per truck per year, tailpipe"],
+    ["Depot solar",m.pvMW.toFixed(1)+" MWdc","About "+Math.round(m.roofM2/1000)+",000 m² of warehouse roof"]];
+  document.getElementById("kpis").innerHTML=k.map(x=>`<div class="kpi"><div class="k">${x[0]}</div><div class="v">${x[1]}</div><div class="n">${x[2]}</div></div>`).join("");
+}
+function defaults(){Chart.defaults.color=css("--muted");Chart.defaults.borderColor=css("--line");Chart.defaults.font.family="Inter, system-ui, sans-serif";}
+
+function renderMile(m){
+  const parts=[["Energy",m.ev.energy,0,"--accent"],["Fuel",0,m.dsl.fuel,"--bad"],["Battery packs",m.ev.batt,0,"--c3"],["Swap station",m.ev.station,0,"--c4"],
+    ["Maintenance",m.ev.maint,m.dsl.maint,"--muted"],["Chassis premium",m.ev.chassis,0,"--accent2"],["Road-use charge",m.ev.road,0,"--line"]];
+  if(mileChart) mileChart.destroy();
+  mileChart=new Chart(document.getElementById("mileChart"),{type:"bar",
+    data:{labels:["Diesel truck","Solar swap truck"],datasets:parts.map(p=>({label:p[0],data:[p[2],p[1]],backgroundColor:css(p[3])}))},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,animation:false,
+      scales:{x:{stacked:true,title:{display:true,text:"$ per mile"}},y:{stacked:true}},
+      plugins:{tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c2(c.raw)}/mi`}},legend:{position:"bottom",labels:{boxWidth:10}}}}});
+  document.getElementById("stack").innerHTML=[
+    ["Diesel",c2(m.dMi)+"/mi","Fuel "+c2(m.dsl.fuel)+" + maintenance","--bad"],
+    ["Solar swap",c2(m.evMi)+"/mi",(m.perKwh*100).toFixed(1)+"c/kWh × "+m.kwhMi.toFixed(2)+" kWh/mi + other","--c3"],
+    ["Value of a kWh",(m.valuePerKwh*100).toFixed(0)+"c","Diesel displaced per kWh in the truck","--accent"]]
+    .map(x=>`<div class="opt" style="--c:${css(x[3])}"><div class="t">${x[0]}</div><div class="v">${x[1]}</div><div class="n">${x[2]}</div></div>`).join("");
+  const good=m.save>0;
+  document.getElementById("verdict").innerHTML=good
+    ? `Each truck saves <b>${$(m.save)} a year</b>. A ${P.trucks}-truck depot saves about <b>${$(m.save*P.trucks)}</b> a year and needs about ${m.pvMW.toFixed(1)} MWdc of rooftop solar. Diesel would have to fall to <b>${c2(m.breakevenDiesel)}/gal</b> before the case disappears.`
+    : `Under these inputs diesel is cheaper by <b>${$(-m.save)} per truck per year</b>. Break-even needs diesel above <b>${c2(m.breakevenDiesel)}/gal</b>, higher utilisation or cheaper packs and stations.`;
+}
+
+function renderSens(){
+  const xs=[]; for(let d=2.5;d<=8.001;d+=0.25) xs.push(+d.toFixed(2));
+  const mk=(over)=>xs.map(d=>swap({...P,...over,diesel:d}).save/1000);
+  if(sensChart) sensChart.destroy();
+  sensChart=new Chart(document.getElementById("sensChart"),{type:"line",
+    data:{labels:xs.map(x=>"$"+x.toFixed(2)),datasets:[
+      {label:"Current inputs",data:mk({}),borderColor:css("--accent"),pointRadius:0,borderWidth:2.5},
+      {label:"China-level packs and station ($90/kWh, $1.2M)",data:mk({packCost:90,stationCapex:1200000,chassisPrem:0}),borderColor:css("--c3"),pointRadius:0,borderWidth:1.5},
+      {label:"Low utilisation (50,000 mi)",data:mk({miles:50000}),borderColor:css("--bad"),pointRadius:0,borderWidth:1.5,borderDash:[5,4]}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,
+      scales:{x:{title:{display:true,text:"Diesel price ($/gal)"},ticks:{maxTicksLimit:12}},y:{title:{display:true,text:"Saving per truck ($k/yr)"}}},
+      plugins:{legend:{position:"bottom",labels:{boxWidth:10}},tooltip:{callbacks:{label:c=>`${c.dataset.label}: $${c.raw.toFixed(1)}k`}}}}});
+  const be=swap(P).breakevenDiesel;
+  document.getElementById("sensNote").textContent=`Break-even diesel at current inputs is ${c2(be)}/gal. A year ago the US average was $3.72 and in October 2026 it is $6.20, so a 15-year station investment depends heavily on the long-run average.`;
+}
+
+function renderValue(m){
+  const items=[["Heavy freight (diesel displaced)",m.valuePerKwh*100,"--accent"],["Residential retail, sunny South",15,"--accent2"],["Data centre / wholesale",7,"--c4"],["Delivered swap cost",m.perKwh*100,"--c3"]];
+  if(valueChart) valueChart.destroy();
+  valueChart=new Chart(document.getElementById("valueChart"),{type:"bar",
+    data:{labels:items.map(i=>i[0]),datasets:[{data:items.map(i=>i[1]),backgroundColor:items.map(i=>css(i[2]))}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw.toFixed(1)+" c/kWh"}}},
+      scales:{x:{title:{display:true,text:"c per kWh"},min:0}}}});
+}
+
+function siteRows(){
+  const rows=SITES.map(s=>{const site={name:s[0],state:s[1],region:s[2],diesel:s[3],ind:s[4],yld:s[5],clim:s[6],infra:s[7],tags:s[8],note:s[9]};
+    const m=swap(P,site); return {...site,dNow:m.diesel,save:m.save,perKwh:m.perKwh*100,be:m.breakevenDiesel};});
+  const hi=Math.max(...rows.map(r=>r.save),1);
+  rows.forEach(r=>r.score=0.6*Math.max(0,r.save)/hi*100+0.4*(r.infra/5)*100);
+  return rows;
+}
+const tagClass=t=>/grid competition|Cold|Weak sun|complicate/i.test(t)?"b":/WattEV|TeraWatt|NMDOT|grant|funded|permitting/i.test(t)?"a":"g";
+function renderSites(){
+  const rows=siteRows().sort((a,b)=>{const x=a[sort.k],y=b[sort.k];return typeof x==="string"?sort.d*x.localeCompare(y):sort.d*(x-y);});
+  const cols=[["name","Location","l"],["state","State","l"],["score","Score"],["save","Saving/truck/yr"],["dNow","Diesel"],["ind","Grid c/kWh"],["yld","Yield"],["perKwh","Delivered c/kWh"],["be","Break-even diesel"],["infra","Infra /5"],["tags","Existing infrastructure","l"]];
+  const f=(k,r)=>k==="score"?r.score.toFixed(0):k==="save"?$(r.save):k==="dNow"?c2(r.dNow)+(r.region.includes("est")?"*":""):k==="ind"?r.ind.toFixed(1):k==="perKwh"?r.perKwh.toFixed(1):k==="be"?c2(r.be):k==="tags"?r.tags.map(t=>`<span class="tag ${tagClass(t)}">${t}</span>`).join(""):r[k];
+  const t=document.getElementById("siteTbl");
+  t.innerHTML=`<thead><tr>${cols.map(c=>`<th class="${c[2]||""} ${c[0]===sort.k?"sorted":""}" data-k="${c[0]}">${c[1]}</th>`).join("")}</tr></thead>
+  <tbody>${rows.map(r=>`<tr title="${r.note}">${cols.map(c=>`<td class="${c[2]||""} ${c[0]==="tags"?"wrap":""}">${f(c[0],r)}</td>`).join("")}</tr>`).join("")}</tbody>`;
+  t.querySelectorAll("th").forEach(th=>th.onclick=()=>{const k=th.dataset.k;sort={k,d:k===sort.k?-sort.d:-1};renderSites();});
+  const top=[...rows].sort((a,b)=>b.score-a.score).slice(0,4);
+  document.getElementById("picks").innerHTML=top.map((r,i)=>`<div class="pick"><div class="rk">#${i+1} · score ${r.score.toFixed(0)}</div><div class="nm">${r.name}</div>
+    <p>${$(r.save)} per truck per year at ${c2(r.dNow)} diesel, ${r.perKwh.toFixed(1)}c/kWh delivered, break-even ${c2(r.be)}/gal.</p><p>${r.note}</p></div>`).join("");
+}
+
+function renderAll(){const m=swap(P);defaults();kpis(m);renderMile(m);renderSens();renderValue(m);renderSites();}
+(function(){
+  Object.keys(FMT).forEach(k=>{const el=document.getElementById(k),o=document.getElementById("o_"+k);el.value=P[k];o.textContent=FMT[k](P[k]);
+    el.oninput=()=>{P[k]=+el.value;o.textContent=FMT[k](P[k]);k==="dScen"?renderSites():renderAll();};});
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change",renderAll);
+  renderAll();
+})();
+</script>
+</body>
+</html>
